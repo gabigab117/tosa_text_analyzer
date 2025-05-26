@@ -1,24 +1,19 @@
-# Consigne pour la Leçon 2: Manipulation avancée des chaînes
+# Consigne pour la Leçon 3: Opérateurs et expressions
 
-**Objectif:** Enrichir l'analyseur de texte avec des techniques avancées de manipulation de chaînes et de formatage.
+**Objectif:** Enrichir l'analyseur de texte avec des analyses conditionnelles utilisant les opérateurs et expressions booléennes.
 
 **Tâches à réaliser:**
-* Ajouter l'analyse des lignes avec `splitlines()` et `strip()`
-* Implémenter la détection de patterns avec `startswith()` et `endswith()`
-* Créer une extraction interactive de mots avec `input()` et validation
-* Ajouter la détection de patterns avec expressions régulières
-* Implémenter un rapport formaté utilisant `.format()` et f-strings
+* Implémenter des vérifications avec `all()` et `any()`
+* Ajouter des analyses utilisant les opérateurs de comparaison
+* Appliquer les expressions booléennes pour analyser le contenu
+* Utiliser les opérateurs logiques dans des conditions pratiques
 
 **Fonctionnalités attendues:**
-* `analyser_lignes()` - analyse nombre de lignes, lignes vides, ligne la plus longue
-* `detecter_patterns()` - détecte mots commençant par voyelles/majuscules, finissant par point
-* `extraire_mots_input()` - filtrage interactif par longueur, première lettre ou majuscule
-* `detecter_avec_regex()` - extraction d'emails et nombres avec expressions régulières
-* `generer_rapport()` - rapport formaté avec template `.format()` et f-strings
+* `verifier_conditions_texte()` - utilise `any()` et `all()` pour vérifier la présence de chiffres, lettres, espaces et analyser les mots
+* `analyser_taille_mots()` - compare les longueurs avec opérateurs `<`, `>`, `==` par rapport à la moyenne
 
 **Concepts à appliquer:**
-* Méthodes de chaînes avancées: `splitlines()`, `strip()`, `startswith()`, `endswith()`
-* Formatage mixte avec `.format()` et f-strings (séparateurs, décimales)
-* Utilisation du module `re` pour les expressions régulières
-* Interaction utilisateur avec `input()` et gestion d'erreurs
-* Assemblage de texte avec `join()` et séparateurs personnalisés
+* Expressions booléennes avec `any()` et `all()` pour vérifications globales
+* Opérateurs de comparaison (`<`, `>`, `==`) pour classification et analyse
+* Expressions conditionnelles
+* Calculs statistiques avec opérateurs arithmétiques et comparaisons

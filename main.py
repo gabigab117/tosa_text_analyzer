@@ -1,6 +1,6 @@
 """
 TextAnalyzer - Analyseur de texte
-Leçon 2: Manipulation avancée des chaînes
+Leçon 3: Opérateurs et expressions
 """
 
 import re
@@ -132,6 +132,39 @@ class TextAnalyzer:
         
         self.stats["regex"] = patterns
         return patterns
+    
+    def verifier_conditions_texte(self):
+        if not self.text:
+            return dict()
+        
+        mots = self.text.split()
+        
+        conditions = {
+            "contient_chiffres": any(char.isdigit() for char in self.text), # bool
+            "contient_lettres": any(char.isalpha() for char in self.text), # bool
+            "contient_espaces": any(char.isspace() for char in self.text), # bool
+            "tous_mots_courts": all(len(mot) <= 3 for mot in mots), # bool
+            "au_moins_un_mot_long": any(len(mot) > 3 for mot in mots), # bool
+            "tous_alphabetiques": all(char.isalpha() for char in self.text), # bool
+        }
+        self.stats["conditions"] = conditions
+        return conditions
+    
+    def analyser_taille_mots(self):
+        if not self.text:
+            return dict()
+        
+        mots = self.text.split()
+        longueur_moyenne = sum(len(mot) for mot in mots) / len(mots) if mots else 0
+        analyse = {
+            "longueur_moyenne": longueur_moyenne,
+            "mots_courts": sum(1 for mot in mots if len(mot) < longueur_moyenne), # int
+            "mots_longs": sum(1 for mot in mots if len(mot) > longueur_moyenne), # int
+            "mots_egaux": sum(1 for mot in mots if len(mot) == longueur_moyenne), # int
+        }
+        
+        self.stats["taille_mots"] = analyse
+        return analyse
 
     def afficher_stats(self):
         print(f"Texte analysé : {self.text}")
@@ -182,6 +215,15 @@ if __name__ == "__main__":
     analyseur.analyser_lignes()
     analyseur.detecter_patterns()
     analyseur.detecter_avec_regex()
-
+    
+    # Analyser taille des mots
+    print("Analyse de la taille des mots :")
+    a = analyseur.analyser_taille_mots()
+    print(a)
+    b = analyseur.verifier_conditions_texte()
+    print(b)
+    analyseur.afficher_stats()
+    # Générer et afficher le rapport
+    print("\nGénération du rapport :")
     r = analyseur.generer_rapport()
     print(r)
