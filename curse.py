@@ -39,22 +39,24 @@ class Mesure:
         # Calculs avec des entiers
         seuil_bas = 30                           # int
         seuil_haut = 80                          # int
-        difference_seuil = humidite_actuelle - seuil_bas  # int: 35
         
         # Classification simple
         if humidite_actuelle < seuil_bas:
             niveau = 1                           # int
             description = "Sec"                  # str
-            ecart_info = f" Manque {abs(difference_seuil)} pour atteindre le seuil bas de {seuil_bas}."  # str
+            ecart_seuil_bas = seuil_bas - humidite_actuelle  # int: manque pour atteindre seuil_bas
+            ecart_info = f" Manque {ecart_seuil_bas} pour atteindre le seuil bas de {seuil_bas}."  # str
 
         elif humidite_actuelle < seuil_haut:
             niveau = 2                           # int
             description = "Normal"               # str
-            ecart_info = f" Manque {abs(difference_seuil)} pour atteindre le seuil haut de {seuil_haut}."  # str
+            ecart_seuil_haut = seuil_haut - humidite_actuelle  # int: manque pour atteindre seuil_haut
+            ecart_info = f" Manque {ecart_seuil_haut} pour atteindre le seuil haut de {seuil_haut}."  # str
         else:
             niveau = 3                           # int
             description = "Humide"               # str
-            ecart_info = f" Dépasse de {abs(difference_seuil)} le seuil haut de {seuil_haut}."  # str
+            ecart_seuil_haut = humidite_actuelle - seuil_haut  # int: dépasse le seuil_haut
+            ecart_info = f" Dépasse de {ecart_seuil_haut} le seuil haut de {seuil_haut}."  # str
 
         return niveau, description, ecart_info               # tuple(int, str, str)
     
@@ -139,148 +141,42 @@ class Mesure:
             "froid": temperature_basse,         # bool
             "chaud": temperature_haute,         # bool
             "agreable": temps_agreable          # bool
-        }
-    
-    def analyser_mesure_complete(self):
-        """Retourne un résumé complet sous forme de tuple"""
-        # Récupération des analyses précédentes
-        niveau_humidite, desc_humidite, ecart_humidite = self.analyser_humidite()  # tuple
-        
-        # Création d'un tuple avec des types mixtes
-        resume = (
-            self.ville,                    # str
-            self.temperature,              # float ou int
-            niveau_humidite,               # int
-            self.pluvieux                  # bool
-        )
-        
-        # Tuple avec résultats de calculs
-        coordonnees = (48.8566, 2.3522)   # tuple: (float, float)
-        
-        # Accès aux éléments (comme une liste)
-        ville_tuple = resume[0]            # str
-        temp_tuple = resume[1]             # float ou int
-        
-        # Décomposition (unpacking) du tuple
-        ville, temperature, niveau, pluie = resume  # Assignation multiple
-        
-        return resume                      # tuple
-
-    def stocker_mesures_simples(self):
-        """Stockage simple de mesures dans des listes"""
-        # Listes de valeurs du même type
-        temperatures = []                       # list vide
-        temperatures.append(18.5)               # list: [18.5]
-        temperatures.append(19.2)               # list: [18.5, 19.2]
-        temperatures.append(17.8)               # list: [18.5, 19.2, 17.8]
-        
-        # Listes de types mixtes
-        infos_ville = ["Paris", 2161000, True] # list: [str, int, bool]
-        
-        # Accès aux éléments
-        premiere_temp = temperatures[0]         # float: 18.5
-        nombre_mesures = len(temperatures)      # int: 3
-        derniere_temp = temperatures[-1]        # float: 17.8
-        
-        return {
-            "toutes_temperatures": temperatures, # list
-            "nombre": nombre_mesures,           # int
-            "premiere": premiere_temp,           # float
-            "derniere": derniere_temp,           # float
-        }
-        
+        }      
 
 class StationMeteo:
     def __init__(self):
-        self.mesures = []                # list
+        self.mesures = []                # list[dict]
         self.config = {}                 # dict
         self.villes_observees = set()    # set
         self.derniere_mesure = None      # None
     
-    def creer_config_station(self):
+    def creer_config_station(self, nom, altitude, latitude, longitude, active=True):
         """Création d'une configuration avec un dictionnaire"""
         # Dictionnaire avec différents types de valeurs
-        configuration = {}                      # dict vide
         
         # Ajout d'éléments un par un
-        configuration["nom"] = "Station-Paris"  # str
-        configuration["altitude"] = 35          # int
-        configuration["latitude"] = 48.8566     # float
-        configuration["active"] = True          # bool
-        
+        self.config["nom"] = nom  # str
+        self.config["altitude"] = altitude  # int
+        self.config["latitude"] = latitude  # float
+        self.config["longitude"] = longitude  # float
+        self.config["active"] = active  # bool
+
         # Ou création directe
-        config_complete = {
-            "nom": "Station-Paris",             # str
-            "altitude": 35,                     # int
-            "latitude": 48.8566,                # float
-            "longitude": 2.3522,                # float
-            "active": True,                     # bool
+        self.config = {
+            "nom": nom,             # str
+            "altitude": altitude,   # int
+            "latitude": latitude,   # float
+            "longitude": longitude,  # float
+            "active": active,       # bool
             "capteurs": ["temperature", "humidite", "pression"]  # list
         }
         
         # Accès aux valeurs
-        nom_station = config_complete["nom"]           # str
-        est_active = config_complete["active"]         # bool
-        nombre_capteurs = len(config_complete["capteurs"])  # int
-        
-        return config_complete                  # dict
-    
-    def gerer_villes_et_types_meteo(self):
-        """Gestion des villes et types de météo avec sets et frozensets"""
-        # Set mutable classique
-        villes = set()                          # set vide
-        villes.add("Paris")                     # set: {"Paris"}
-        villes.add("Lyon")                      # set: {"Paris", "Lyon"}
-        villes.add("Paris")                     # set: {"Paris", "Lyon"} (pas de doublon)
-        
-        # Conversion tuple → set pour modification
-        types_meteo_tuple = ("ensoleillé", "pluvieux", "nuageux", "ensoleillé")  # tuple avec doublon
-        types_meteo_set = set(types_meteo_tuple)    # set: {"ensoleillé", "pluvieux", "nuageux"} (doublons éliminés)
-        
-        # Conversion liste → set pour éliminer doublons
-        temperatures_liste = [18, 22, 18, 25, 22, 20]  # list avec doublons
-        temperatures_uniques = set(temperatures_liste)  # set: {18, 22, 25, 20} (doublons éliminés)
-        
-        types_meteo_set.add("orageux")              # set: {"ensoleillé", "pluvieux", "nuageux", "orageux"}
-        
-        # Conversion set → tuple si on veut l'immutabilité
-        types_finaux = tuple(types_meteo_set)       # tuple: ("ensoleillé", "pluvieux", "nuageux", "orageux")
-        
-        # Frozenset : set immutable
-        conditions_fixes = frozenset(["sec", "humide", "venteux"])  # frozenset
-        # conditions_fixes.add("nouveau")  # ❌ Erreur : frozenset immutable
-        
-        # Opérations sur sets
-        villes_france = {"Paris", "Lyon", "Marseille"}     # set
-        villes_observees = {"Paris", "Berlin", "Madrid"}   # set
-        villes_communes = villes_france & villes_observees  # set: {"Paris"} (intersection)
-        toutes_villes = villes_france | villes_observees    # set: {"Paris", "Lyon", "Marseille", "Berlin", "Madrid"} (union)
-        
-        # Suppression d'éléments
-        if "Berlin" in villes_observees:
-            villes_observees.remove("Berlin")          # Supprime Berlin, erreur si absent
-        villes_observees.discard("Tokyo")               # Supprime Tokyo si présent, sinon rien
-        ville_supprimee = villes_observees.pop()        # Supprime et retourne un élément aléatoire : str
-        
-        # Tests de relations entre sets
-        sont_disjoints = villes_france.isdisjoint({"Tokyo", "New York"})  # bool: True (aucun élément commun)
-        
-        # Vérifications
-        paris_present = "Paris" in villes       # bool: True
-        nombre_villes = len(villes)             # int: 2
-        
-        return {
-            "villes_set": villes,               # set
-            "types_meteo": types_meteo_set,     # set
-            "temperatures_uniques": temperatures_uniques, # set
-            "types_tuple": types_finaux,        # tuple
-            "conditions_fixes": conditions_fixes, # frozenset
-            "villes_communes": villes_communes,  # set
-            "toutes_villes": toutes_villes,      # set
-            "ville_supprimee": ville_supprimee,  # str
-            "sont_disjoints": sont_disjoints,    # bool
-            "nombre": nombre_villes             # int
-        }
+        _ = self.config["nom"]          # str
+        _ = self.config["active"]         # bool
+        _ = len(self.config["capteurs"])  # int
+
+        return self.config                  # dict
     
     def obtenir_mesure_ou_defaut(self, index=None):
         """Retourne une mesure spécifique ou la dernière si index=None"""
@@ -298,7 +194,8 @@ class StationMeteo:
         self.config["seuils"] = {"min": temp_min, "max": temp_max}
         return self.config
     
-    def analyser_donnees_brutes(self, donnees_brutes):
+    @staticmethod
+    def analyser_donnees_brutes(donnees_brutes):
         """Analyse des données brutes et retourne un résumé avec détection de patterns"""
         if not donnees_brutes:
             return dict()
@@ -345,21 +242,19 @@ class StationMeteo:
 # Exemple d'utilisation
 
 station = StationMeteo()
-station.mesures.append({
-    "humidité": 65,
-    "température": 18.5,
-    "ville": "Paris"
-})
+# Exemple de création de mesure
 mesure_paris = Mesure(18.5, 65, 1013, "Paris", False)
 print(mesure_paris.analyser_humidite())
 print(mesure_paris.analyser_temperature())
 print(mesure_paris.analyser_ville())
 print(mesure_paris.analyser_conditions_meteo())
-print(*mesure_paris.analyser_mesure_complete())
-print(mesure_paris.stocker_mesures_simples())
-print(station.gerer_villes_et_types_meteo())
 # Exemple de création de configuration de station
-config_station = station.creer_config_station()
+config_station = station.creer_config_station(
+    nom="Station-Paris",
+    altitude=35,
+    latitude=48.8566,
+    longitude=2.3522
+)
 print(f"\n🔧 Configuration de la station: {config_station}")
 # mesure defaut et configurer seuil
 mesure_defaut = station.obtenir_mesure_ou_defaut()
@@ -380,3 +275,67 @@ Alerte vent fort !
 
 stats_analyse = station.analyser_donnees_brutes(donnees_brutes)
 print(f"\n📊 Statistiques d'analyse des données brutes: {stats_analyse}")
+
+# Exemple de manipulation de dictionnaire pour voir les différentes méthodes associées aux dictionnaires
+config_station = station.creer_config_station(
+    nom="Station-Paris",
+    altitude=35,
+    latitude=48.8566,
+    longitude=2.3522
+)
+
+nom = config_station.get("nom")  # Accès avec get
+altitude = config_station.get("altitude", 0)  # Valeur par défaut si clé absente
+print("nom" in config_station) # bool: Vérifie si la clé "nom" existe
+# keys, values, items
+print(config_station.keys())  # Obtenir les clés
+print(config_station.values())  # Obtenir les valeurs
+print(config_station.items())  # Obtenir les paires clé-valeur
+
+# update
+config_station.update({"autre_information": "Informations supplémentaires"})  # Mise à jour avec un dictionnaire
+print(config_station)
+
+# setdefault
+config_station.setdefault("version", "1.0")  # Définit une valeur par défaut si la clé n'existe pas
+
+# suppression
+print(config_station.pop("altitude", 0)) # Suppression de la clé "altitude" et retourne sa valeur, 0 si absente
+print(config_station.popitem())  # Suppression de la dernière paire clé-valeur insérée
+
+
+print("---\nManipulation des sets\n---")
+station = StationMeteo()
+station.villes_observees.add("Paris")        # set: {"Paris"}
+station.villes_observees.add("Lyon")         # set: {"Paris", "Lyon"}  
+station.villes_observees.add("Paris")        # set: {"Paris", "Lyon"} (pas de doublon)
+station.villes_observees.add("Berlin")       # set: {"Paris", "Lyon", "Berlin"}
+
+# Test d'appartenance
+print("Paris" in station.villes_observees)  # bool: True
+
+# Conversion tuple → set pour éliminer doublons
+villes_tuple = ("Madrid", "Tokyo", "Madrid")  # tuple avec doublon
+villes_depuis_tuple = set(villes_tuple)       # set: {"Madrid", "Tokyo"} (doublons éliminés)
+
+# Conversion liste → set
+villes_liste = ["Sydney", "Londres", "Sydney"]  # list avec doublons
+villes_depuis_liste = set(villes_liste)         # set: {"Sydney", "Londres"} (doublons éliminés)
+
+# Conversion set → tuple pour immutabilité
+villes_tuple_final = tuple(station.villes_observees)    # tuple: ("Paris", "Lyon", "Berlin") immutable
+
+# Frozenset : set immutable
+villes_fixes = frozenset(["New York", "Rome"])  # frozenset: immutable
+
+# Opérations sur sets
+villes_france = {"Paris", "Lyon", "Marseille"}                  # set
+communes = station.villes_observees & villes_france               # set: {"Paris", "Lyon"} (intersection)
+toutes = station.villes_observees | villes_france                 # set: union
+
+# Suppressions
+station.villes_observees.discard("Tokyo")                         # Supprime si présent, sinon rien
+ville_supprimee = station.villes_observees.pop()                  # str: supprime et retourne aléatoirement
+
+# isdisjoint
+print(station.villes_observees.isdisjoint(villes_france))  # bool: False (vérifie s'il n'y a pas d'éléments communs)
