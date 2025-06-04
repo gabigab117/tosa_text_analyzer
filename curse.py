@@ -1,3 +1,6 @@
+import re
+
+
 class Mesure:
     def __init__(self, temperature, humidite, pression, ville, pluvieux):
         """
@@ -196,146 +199,185 @@ class StationMeteo:
     
     @staticmethod
     def analyser_donnees_brutes(donnees_brutes):
-        """Analyse des données brutes et retourne un résumé avec détection de patterns"""
+        """
+        Analyse des données brutes et retourne un résumé avec détection de patterns.
+        
+        Cette méthode statique est conçue comme un utilitaire de traitement :
+        elle reçoit des données textuelles brutes et produit un rapport d'analyse
+        sans avoir besoin d'accéder aux données de l'instance.
+        
+        Args:
+            donnees_brutes (str): Texte contenant des données météorologiques
+            
+        Returns:
+            dict: Rapport d'analyse avec statistiques et données extraites
+        """
         if not donnees_brutes:
             return dict()
-        
+
         # Division en lignes individuelles
-        lignes = donnees_brutes.splitlines()  # Sépare les lignes
-        
+        lignes = donnees_brutes.splitlines()  # list: sépare les lignes
+
         # Nettoyage des lignes
-        lignes_nettoyees = [ligne.strip() for ligne in lignes]  # Nettoyage des espaces
-        lignes_valides = [ligne for ligne in lignes_nettoyees if ligne]  # Filtre les lignes non vides
-        
+        lignes_nettoyees = [ligne.strip() for ligne in lignes]  # list: nettoyage des espaces
+        lignes_valides = [ligne for ligne in lignes_nettoyees if ligne]  # list: filtre les lignes non vides
+
         # Détection de patterns avec différentes méthodes
-        commentaires = [ligne for ligne in lignes_valides if ligne.startswith("#")]  # Commentaires
-        mesures_temperature = [ligne for ligne in lignes_valides if "Température" in ligne and ligne.endswith("°C")]  # Températures
-        alertes = [ligne for ligne in lignes_valides if "!" in ligne]  # Alertes
-        
+        commentaires = [ligne for ligne in lignes_valides if ligne.startswith("#")]  # list: commentaires
+        mesures_temperature = [ligne for ligne in lignes_valides if "Température" in ligne and ligne.endswith("°C")]  # list: températures
+        alertes = [ligne for ligne in lignes_valides if "!" in ligne]  # list: alertes
+
+        # Statistiques d'analyse
         stats = {
-            "total_lignes": len(lignes_valides),  # Nombre total de lignes valides
-            "lignes_commentaires": len(commentaires),  # Nombre de commentaires
-            "lignes_temp": len(mesures_temperature),  # Lignes de température
-            "lignes_alertes": len(alertes)  # Lignes d'alertes
+            "total_lignes": len(lignes_valides),      # int: nombre total de lignes valides
+            "lignes_commentaires": len(commentaires), # int: nombre de commentaires
+            "lignes_temp": len(mesures_temperature),  # int: lignes de température
+            "lignes_alertes": len(alertes),           # int: lignes d'alertes
+            "commentaires": commentaires,             # list: commentaires extraits
+            "temperatures": mesures_temperature,      # list: mesures de température
+            "alertes": alertes                        # list: alertes détectées
         }
-        return stats
+        return stats                                  # dict
     
-    def filtrer_mesure_interactif(self):
-        if not self.mesures:
-            return list()
+    # StationMeteo
+    def configurer_station_interactive(self):
+        """Configuration interactive de la station avec validation des entrées"""
+        print("=== Configuration de la station météorologique ===")
         
-        print("""
-        Sélectionnez un critère de filtrage:
-        1. Par température (seuil minimum)
-        2. Par ville (commence par)
-        3. Par conditions (pluvieux ou non)
-              """)
-        choix = input("Entrez votre choix: ")
-        if choix == "1":
+        # Saisie et validation du nom
+        while True:
+            nom = input("Nom de la station : ").strip()  # str: saisie utilisateur
+            if nom and len(nom) >= 3:                    # Validation: non vide et longueur minimale
+                break
+            print("Le nom doit contenir au moins 3 caractères.")
+        
+        # Saisie de l'altitude avec gestion d'erreurs
+        while True:
             try:
-                seuil = float(input("Entrez le seuil de température minimum: "))
-                mesures_filtrees = ...
+                altitude_str = input("Altitude (en mètres) : ")  # str: saisie brute
+                altitude = int(altitude_str)                     # int: conversion
+                if altitude >= 0:                                # Validation: altitude positive
+                    break
+                print("L'altitude doit être positive.")
             except ValueError:
-                ...
+                print("Veuillez entrer un nombre entier valide.")
+        
+        # Choix du type de station
+        print("\nType de station :")
+        print("1. Urbaine")
+        print("2. Rurale") 
+        print("3. Côtière")
+        
+        types_station = {"1": "urbaine", "2": "rurale", "3": "cotiere"}  # dict: mapping choix
+        
+        while True:
+            choix = input("Votre choix (1, 2 ou 3) : ").strip()  # str: choix utilisateur
+            if choix in types_station:
+                type_station = types_station[choix]               # str: type validé
+                break
+            print("Choix invalide. Veuillez entrer 1, 2 ou 3.")
+        
+        # Stockage de la configuration
+        self.config = {
+            "nom": nom,                              # str
+            "altitude": altitude,                    # int
+            "type": type_station,                    # str
+            "active": True                           # bool
+        }
+        
+        return self.config                           # dict
+    
+
+    # StationMeteo
+    @staticmethod
+    def extraire_donnees_avec_regex(texte_donnees):
+        """Extrait des données météorologiques avec des expressions régulières"""
+        if not texte_donnees:
+            return dict()
+        
+        # Patterns pour différents types de données
+        patterns = {
+            # Températures : "18.5°C" ou "Température: 18.5°C"
+            "temperatures": re.findall(r"(?:Température:\s*)?(-?\d+(?:\.\d+)?)°C", texte_donnees),  # list
+            
+            # Humidité : "65%" ou "Humidité: 65%"
+            "humidites": re.findall(r"(?:Humidité:\s*)?(\d+)%", texte_donnees),  # list
+            
+            # Pressions : "1013 hPa" ou "Pression: 1013 hPa"
+            "pressions": re.findall(r"(?:Pression:\s*)?(\d+)\s*hPa", texte_donnees),  # list
+            
+            # Dates au format DD/MM/YYYY
+            "dates": re.findall(r"(\d{2}/\d{2}/\d{4})", texte_donnees),  # list
+            
+            # Heures au format HH:MM
+            "heures": re.findall(r"(\d{2}:\d{2})", texte_donnees),  # list
+        }
+        
+        # Conversion des types pour les valeurs numériques
+        donnees_extraites = {
+            "temperatures": [float(temp) for temp in patterns["temperatures"]],  # list[float]
+            "humidites": [int(hum) for hum in patterns["humidites"]],            # list[int]
+            "pressions": [int(press) for press in patterns["pressions"]],        # list[int]
+            "dates": patterns["dates"],                                          # list[str]
+            "heures": patterns["heures"],                                        # list[str]
+            "total_mesures": len(patterns["temperatures"])                       # int
+        }
+        
+        return donnees_extraites                     # dict
+    
+    # StationMeteo
+    def generer_rapport_station(self):
+        """Génère un rapport formaté de la station avec différentes techniques de formatage"""
+        if not self.config:
+            return "Station non configurée"
+        
+        # Template avec .format()
+        template_titre = "=== Rapport de la station {nom} ===".format(nom=self.config["nom"])  # str
+        
+        # Informations de base avec f-strings et formatage numérique
+        nom_station = self.config["nom"]             # str
+        altitude = self.config["altitude"]           # int
+        type_station = self.config["type"]           # str
+        
+        info_base = f"Station: {nom_station} (Type: {type_station}, Altitude: {altitude:,} m)"  # str
+        
+        # Formatage conditionnel
+        status_mesures = f"Nombre de mesures: {len(self.mesures)}" if self.mesures else "Aucune mesure"  # str
+        
+        # Exemples de formatage f-string avancé
+        from datetime import datetime
+        maintenant = datetime.now()
+        
+        # Formatage de date/heure avec zéros de tête
+        horodatage = f"Généré le {maintenant.day:02d}/{maintenant.month:02d}/{maintenant.year} à {maintenant.hour:02d}:{maintenant.minute:02d}"  # str
+        
+        # Formatage avec pourcentage et précision
+        if self.mesures:
+            objectif_mesures = 50  # Objectif de 50 mesures par jour
+            pourcentage_activite = (len(self.mesures) / objectif_mesures) * 100
+            activite = f"Objectif atteint: {pourcentage_activite:6.1f}%"  # str: largeur 6, 1 décimale
+        else:
+            activite = "Objectif atteint: N/A"       # str
+        
+        # Formatage avec alignement et padding
+        status_format = f"Status: {self.config.get('active', False):>10}"  # str: alignement droite sur 10 caractères
+        
+        # Assembly final du rapport avec join()
+        lignes_rapport = [template_titre, "=" * 40, info_base, status_mesures, horodatage, activite, status_format]  # list
+        
+        return "\n".join(lignes_rapport)             # str: assemblage avec sauts de ligne
 
 
-# Exemple d'utilisation
+
+# Exemple d'utilisation du rapport
 
 station = StationMeteo()
-# Exemple de création de mesure
-mesure_paris = Mesure(18.5, 65, 1013, "Paris", False)
-print(mesure_paris.analyser_humidite())
-print(mesure_paris.analyser_temperature())
-print(mesure_paris.analyser_ville())
-print(mesure_paris.analyser_conditions_meteo())
-# Exemple de création de configuration de station
-config_station = station.creer_config_station(
-    nom="Station-Paris",
-    altitude=35,
-    latitude=48.8566,
-    longitude=2.3522
-)
-print(f"\n🔧 Configuration de la station: {config_station}")
-# mesure defaut et configurer seuil
-mesure_defaut = station.obtenir_mesure_ou_defaut()
-print(f"\n📊 Mesure par défaut: {mesure_defaut}")
-seuils_configures = station.configurer_seuils(temp_min=0.0, temp_max=35.0)
-print(f"\n📈 Seuils configurés: {seuils_configures}")
-
-# Exemple d'analyse de données brutes
-donnees_brutes = """
-# Données météo
-# Mesures de la station
-Température: 18.5°C
-Humidité: 65%
-Pression: 1013 hPa
-Alerte vent fort !
-# Fin des mesures
-"""
-
-stats_analyse = station.analyser_donnees_brutes(donnees_brutes)
-print(f"\n📊 Statistiques d'analyse des données brutes: {stats_analyse}")
-
-# Exemple de manipulation de dictionnaire pour voir les différentes méthodes associées aux dictionnaires
-config_station = station.creer_config_station(
-    nom="Station-Paris",
-    altitude=35,
-    latitude=48.8566,
-    longitude=2.3522
-)
-
-nom = config_station.get("nom")  # Accès avec get
-altitude = config_station.get("altitude", 0)  # Valeur par défaut si clé absente
-print("nom" in config_station) # bool: Vérifie si la clé "nom" existe
-# keys, values, items
-print(config_station.keys())  # Obtenir les clés
-print(config_station.values())  # Obtenir les valeurs
-print(config_station.items())  # Obtenir les paires clé-valeur
-
-# update
-config_station.update({"autre_information": "Informations supplémentaires"})  # Mise à jour avec un dictionnaire
-print(config_station)
-
-# setdefault
-config_station.setdefault("version", "1.0")  # Définit une valeur par défaut si la clé n'existe pas
-
-# suppression
-print(config_station.pop("altitude", 0)) # Suppression de la clé "altitude" et retourne sa valeur, 0 si absente
-print(config_station.popitem())  # Suppression de la dernière paire clé-valeur insérée
-
-
-print("---\nManipulation des sets\n---")
-station = StationMeteo()
-station.villes_observees.add("Paris")        # set: {"Paris"}
-station.villes_observees.add("Lyon")         # set: {"Paris", "Lyon"}  
-station.villes_observees.add("Paris")        # set: {"Paris", "Lyon"} (pas de doublon)
-station.villes_observees.add("Berlin")       # set: {"Paris", "Lyon", "Berlin"}
-
-# Test d'appartenance
-print("Paris" in station.villes_observees)  # bool: True
-
-# Conversion tuple → set pour éliminer doublons
-villes_tuple = ("Madrid", "Tokyo", "Madrid")  # tuple avec doublon
-villes_depuis_tuple = set(villes_tuple)       # set: {"Madrid", "Tokyo"} (doublons éliminés)
-
-# Conversion liste → set
-villes_liste = ["Sydney", "Londres", "Sydney"]  # list avec doublons
-villes_depuis_liste = set(villes_liste)         # set: {"Sydney", "Londres"} (doublons éliminés)
-
-# Conversion set → tuple pour immutabilité
-villes_tuple_final = tuple(station.villes_observees)    # tuple: ("Paris", "Lyon", "Berlin") immutable
-
-# Frozenset : set immutable
-villes_fixes = frozenset(["New York", "Rome"])  # frozenset: immutable
-
-# Opérations sur sets
-villes_france = {"Paris", "Lyon", "Marseille"}                  # set
-communes = station.villes_observees & villes_france               # set: {"Paris", "Lyon"} (intersection)
-toutes = station.villes_observees | villes_france                 # set: union
-
-# Suppressions
-station.villes_observees.discard("Tokyo")                         # Supprime si présent, sinon rien
-ville_supprimee = station.villes_observees.pop()                  # str: supprime et retourne aléatoirement
-
-# isdisjoint
-print(station.villes_observees.isdisjoint(villes_france))  # bool: False (vérifie s'il n'y a pas d'éléments communs)
+station.mesures.append({
+    "temperature": 18.5,
+    "humidite": 65,
+    "pression": 1013,
+    "ville": "Paris",
+    "pluvieux": False
+})
+station.configurer_station_interactive()
+print(station.generer_rapport_station())
