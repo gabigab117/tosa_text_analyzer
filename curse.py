@@ -146,6 +146,66 @@ class Mesure:
             "agreable": temps_agreable          # bool
         }      
 
+    def classifier_conditions_avancees(self):
+        """Classification avancée avec opérateurs chainés et intervalles"""
+        temp = self.temperature
+        humidite = self.humidite
+        pression = self.pression
+        
+        # Opérateurs chainés pour les intervalles
+        temperature_froide = 0 <= temp < 10          # bool
+        temperature_temperee = 10 <= temp <= 25      # bool
+        temperature_chaude = temp > 25               # bool
+        
+        # Intervalles combinés
+        confort_optimal = 15 <= temp <= 25 and 40 <= humidite <= 70  # bool
+        risque_orage = pression < 1000 and humidite > 85             # bool
+        
+        # Score avec comparaisons multiples
+        score_confort = (
+            (1 if 18 <= temp <= 22 else 0) +
+            (1 if 45 <= humidite <= 65 else 0) +
+            (1 if 1013 <= pression <= 1020 else 0)
+        )  # int: score de 0 à 3
+        
+        return {
+            "temperature_froide": temperature_froide,
+            "temperature_temperee": temperature_temperee,
+            "temperature_chaude": temperature_chaude,
+            "confort_optimal": confort_optimal,
+            "risque_orage": risque_orage,
+            "score_confort": score_confort
+        }
+
+    def analyser_conditions_logiques(self):
+        """Démonstration des lois de De Morgan et transformations logiques"""
+        temp = self.temperature
+        humidite = self.humidite
+        pluvieux = self.pluvieux
+        
+        # Conditions de base
+        temp_normale = 15 <= temp <= 25
+        humidite_normale = 40 <= humidite <= 70
+        
+        # Loi 1: not (A and B) ≡ (not A) or (not B)
+        conditions_defavorables_v1 = not (temp_normale and humidite_normale)
+        conditions_defavorables_v2 = (not temp_normale) or (not humidite_normale)
+        
+        # Loi 2: not (A or B) ≡ (not A) and (not B)
+        pas_alerte_v1 = not (temp > 35 or humidite > 90)
+        pas_alerte_v2 = (temp <= 35) and (humidite <= 90)
+        
+        # Simplification pratique
+        alerte_complexe = not (not pluvieux and not (temp > 30 or humidite < 20))
+        alerte_finale = pluvieux or temp > 30 or humidite < 20
+
+        return {
+            "equivalence_loi1": conditions_defavorables_v1 == conditions_defavorables_v2,
+            "equivalence_loi2": pas_alerte_v1 == pas_alerte_v2,
+            "simplification_reussie": alerte_complexe == alerte_finale
+        }
+
+
 class StationMeteo:
     def __init__(self):
         self.mesures = []                # list[dict]
@@ -287,7 +347,6 @@ class StationMeteo:
         
         return self.config                           # dict
     
-
     # StationMeteo
     @staticmethod
     def extraire_donnees_avec_regex(texte_donnees):
@@ -367,17 +426,104 @@ class StationMeteo:
         
         return "\n".join(lignes_rapport)             # str: assemblage avec sauts de ligne
 
+    # StationMeteo
+    def valider_coherence_donnees(self, donnees_mesures):
+        """Valide la cohérence d'un lot de mesures avec expressions booléennes"""
+        if not donnees_mesures:
+            return {"toutes_valides": True, "details": "Aucune donnée"}
+        
+        # Vérifications avec all()
+        toutes_temperatures_valides = all(-50 <= m["temp"] <= 60 for m in donnees_mesures)  # bool
+        toutes_humidites_valides = all(0 <= m["humidite"] <= 100 for m in donnees_mesures)  # bool
+        
+        # Vérifications avec any()
+        au_moins_une_pluie = any(m["pluvieux"] for m in donnees_mesures)  # bool
+        temperature_elevee = any(m["temp"] > 30 for m in donnees_mesures)  # bool
+        
+        # Combinaison all() + logique
+        coherence_pluie = all(not m["pluvieux"] or m["humidite"] > 60 for m in donnees_mesures)  # bool
+        
+        return {
+            "toutes_valides": all([toutes_temperatures_valides, toutes_humidites_valides, coherence_pluie]),
+            "details": {
+                "temperatures": toutes_temperatures_valides,
+                "humidites": toutes_humidites_valides,
+                "presence_pluie": au_moins_une_pluie,
+                "temperature_elevee": temperature_elevee
+            }
+        }
 
+    # StationMeteo  
+    def analyser_tendances_optimise(self, donnees_nouvelles):
+        """Analyse optimisée des tendances avec l'opérateur walrus"""
+        if not donnees_nouvelles:
+            return {}
+        
+        # Walrus dans une condition
+        if (nb_mesures := len(donnees_nouvelles)) >= 5:
+            tendances = {"echantillon_suffisant": True, "taille": nb_mesures}
+            
+            # Calcul de moyenne avec walrus
+            if (temp_moyenne := sum(m["temp"] for m in donnees_nouvelles) / nb_mesures) > 25:
+                tendances["periode_chaude"] = True
+                tendances["temperature_moyenne"] = temp_moyenne
+        else:
+            tendances = {"echantillon_suffisant": False, "taille": nb_mesures}
+        
+        # Walrus dans une compréhension
+        temperatures_ajustees = [
+            temp_ajustee
+            for mesure in donnees_nouvelles
+            if (temp_ajustee := mesure["temp"] + 0.5) > 20
+        ]
+        
+        tendances["temperatures_ajustees"] = temperatures_ajustees
+        return tendances
 
-# Exemple d'utilisation du rapport
+    # StationMeteo
+    @staticmethod
+    def analyser_avec_operateurs_ternaires(donnees_mesures):
+        """Utilisation des opérateurs ternaires et gestion de la précédence"""
+        if not donnees_mesures:
+            return {}
+        
+        analyses = []
+        for mesure in donnees_mesures:
+            temp = mesure["temp"]
+            humidite = mesure["humidite"]
+            
+            # Opérateurs ternaires
+            classification = "Chaud" if temp > 25 else "Froid"
+            confort = "Excellent" if 18 <= temp <= 22 and 45 <= humidite <= 65 else "Moyen"
+            
+            # Précédence des opérateurs
+            # and a une précédence plus élevée que or
+            condition_precedence = temp > 30 or humidite > 80 and mesure["pluvieux"]
+            # Équivaut à: temp > 30 or (humidite > 80 and mesure["pluvieux"])
+            
+            # Avec parenthèses pour changer l'ordre
+            condition_modifiee = (temp > 30 or humidite > 80) and mesure["pluvieux"]
+            
+            # Score avec précédence contrôlée
+            score = (3 if temp > 35 else 1) * (2 if humidite > 80 else 1)
+            
+            analyses.append({
+                "ville": mesure["ville"],
+                "classification": classification,
+                "confort": confort,
+                "precedence_demo": condition_precedence != condition_modifiee,
+                "score": score
+            })
+        
+        return {"analyses": analyses}
 
-station = StationMeteo()
-station.mesures.append({
-    "temperature": 18.5,
-    "humidite": 65,
-    "pression": 1013,
-    "ville": "Paris",
-    "pluvieux": False
-})
-station.configurer_station_interactive()
-print(station.generer_rapport_station())
+# Exemple d'utilisation
+donnees_test = [
+    {"temp": 28, "humidite": 75, "ville": "Paris", "pluvieux": True},
+    {"temp": 15, "humidite": 45, "ville": "Lyon", "pluvieux": False},
+    {"temp": 35, "humidite": 85, "ville": "Marseille", "pluvieux": False}
+]
+
+analyse = StationMeteo.analyser_avec_operateurs_ternaires(donnees_test)
+for a in analyse["analyses"]:
+    print(f"{a['ville']}: {a['classification']} (Score: {a['score']})")
